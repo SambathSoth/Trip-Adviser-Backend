@@ -26,9 +26,8 @@ const hotelRoute = require('./routes/hotel')
 app.use('/hotels', hotelRoute)
 
 //ROUTE
-app.get('/', (req, res) => {
-    res.send("We are on home")
-})
+const route = require('./routes/index')
+app.use('/', route)
 
 //CONNECT TO DB
 mongoose.connect(
