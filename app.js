@@ -1,13 +1,49 @@
-const express = require('express')
-const mongoose = require('mongoose')
-const bodyParser = require('body-parser')
-require('dotenv/config')
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config()
+}
 
+const express = require('express');
+const expressLayouts = require('express-ejs-layouts');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const flash = require('connect-flash');
+const session = require('express-session');
 
-const app = express()
+const app = express();
 
-// app.use(express.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+// PASSWORD CONFIG
+require('./config/passport')(passport);
+
+// EJS
+app.use(expressLayouts);
+app.set('view engine', 'ejs');
+
+// EXPRESS BODY PASRSER
+app.use(express.urlencoded({ extended: true }));
+
+//EXPRESSION SESSION
+app.use(
+    session({
+        secret: 'secret',
+        resave: true,
+        saveUninitialized: true
+    })
+);
+
+// PASSPORD MIDDLEWARE
+app.use(passport.initialize());
+app.use(passport.session());
+
+//CONNECTION FLASH
+app.use(flash());
+
+//GLOBAL VARS
+app.use(function(req, res, next) {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
 
 //IMPORT USER ROUTE
 const userRoute = require('./routes/user')
@@ -26,14 +62,15 @@ const hotelRoute = require('./routes/hotel')
 app.use('/hotels', hotelRoute)
 
 //ROUTE
-const route = require('./routes/index')
-app.use('/', route)
+app.use('/', require('./routes/index'))
 
-//CONNECT TO DB
-mongoose.connect(
-    process.env.DB_CONNECTION, { useNewUrlParser: true },
-    () => console.log("Connected to DB")
-)
+// DB CONNECTION
+mongoose
+    .connect(
+        process.env.DB_CONNECTION, { useNewUrlParser: true, useUnifiedTopology: true }
+    )
+    .then(() => console.log('MongoDB Connected'))
+    .catch(err => console.log(err));
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 3000
 app.listen(PORT, console.log(`Server started on port ${PORT}`))
